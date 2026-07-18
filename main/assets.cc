@@ -261,7 +261,7 @@ bool Assets::LvglStrategy::Apply(Assets* assets, bool refresh_display_theme) {
 
     cJSON* emoji_collection = cJSON_GetObjectItem(root, "emoji_collection");
     if (cJSON_IsArray(emoji_collection)) {
-        auto custom_emoji_collection = std::make_shared<EmojiCollection>();
+        auto custom_emoji_collection = std::make_shared<Twemoji64>();
         int emoji_count = cJSON_GetArraySize(emoji_collection);
         for (int i = 0; i < emoji_count; i++) {
             cJSON* emoji = cJSON_GetArrayItem(emoji_collection, i);

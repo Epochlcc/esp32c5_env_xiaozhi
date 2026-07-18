@@ -174,7 +174,7 @@ esp_err_t Bme690Service::init_bme69x_sensor()
     i2c_device_config_t dev_cfg = {
         .dev_addr_length = I2C_ADDR_BIT_LEN_7,
         .device_address = BME69X_I2C_ADDR_LOW,
-        .scl_speed_hz = 400000,
+        .scl_speed_hz = 100000,
     };
     esp_err_t ret = i2c_master_bus_add_device(i2c_bus_, &dev_cfg, &i2c_dev_);
     if (ret != ESP_OK || i2c_dev_ == nullptr) {

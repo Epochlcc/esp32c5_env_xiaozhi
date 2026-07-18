@@ -10,6 +10,7 @@
 #include <driver/spi_common.h>
 #include <esp_wifi.h>
 #include <esp_event.h>
+#include <esp_check.h>
 
 #include "display/lcd_display.h"
 #include <esp_lcd_panel_vendor.h>
@@ -301,7 +302,21 @@ private:
 
     void InitializeBme690()
     {
-        esp_err_t ret = bme690_service_.Initialize(i2c_bus_);
+        gpio_config_t sdo_conf = {
+            .pin_bit_mask = (1ULL << BME690_SDO_PIN),
+            .mode = GPIO_MODE_OUTPUT,
+            .pull_up_en = GPIO_PULLUP_DISABLE,
+            .pull_down_en = GPIO_PULLDOWN_DISABLE,
+            .intr_type = GPIO_INTR_DISABLE,
+        };
+        esp_err_t ret = gpio_config(&sdo_conf);
+        if (ret != ESP_OK) {
+            ESP_LOGW(TAG, "BME690 SDO pin configuration failed: %s", esp_err_to_name(ret));
+        } else {
+            gpio_set_level(BME690_SDO_PIN, 0);
+        }
+
+        ret = bme690_service_.Initialize(i2c_bus_);
         if (ret == ESP_OK) {
             bme690_service_.Start();
             ESP_LOGI(TAG, "BME690 service started");

@@ -23,6 +23,8 @@
 #define LCD_TP_SCL GPIO_NUM_3
 #define LCD_TP_SDA GPIO_NUM_2
 
+#define BME690_SDO_PIN GPIO_NUM_9
+
 #define LCD_TYPE_ST7789_SERIAL
 #define DISPLAY_WIDTH           284
 #define DISPLAY_HEIGHT          240

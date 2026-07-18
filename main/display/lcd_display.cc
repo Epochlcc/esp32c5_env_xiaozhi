@@ -26,6 +26,7 @@ void LcdDisplay::InitializeLcdThemes() {
     auto text_font = std::make_shared<LvglBuiltInFont>(&BUILTIN_TEXT_FONT);
     auto icon_font = std::make_shared<LvglBuiltInFont>(&BUILTIN_ICON_FONT);
     auto large_icon_font = std::make_shared<LvglBuiltInFont>(&font_awesome_30_4);
+    auto emoji_collection = std::make_shared<Twemoji64>();
 
     // light theme
     auto light_theme = new LvglTheme("light");
@@ -41,6 +42,7 @@ void LcdDisplay::InitializeLcdThemes() {
     light_theme->set_text_font(text_font);
     light_theme->set_icon_font(icon_font);
     light_theme->set_large_icon_font(large_icon_font);
+    light_theme->set_emoji_collection(emoji_collection);
 
     // dark theme
     auto dark_theme = new LvglTheme("dark");
@@ -56,6 +58,7 @@ void LcdDisplay::InitializeLcdThemes() {
     dark_theme->set_text_font(text_font);
     dark_theme->set_icon_font(icon_font);
     dark_theme->set_large_icon_font(large_icon_font);
+    dark_theme->set_emoji_collection(emoji_collection);
 
     auto& theme_manager = LvglThemeManager::GetInstance();
     theme_manager.RegisterTheme("light", light_theme);
@@ -1082,20 +1085,22 @@ void LcdDisplay::SetEmotion(const char* emotion) {
         return;
     }
 
+    const char* utf8 = font_awesome_get_utf8(emotion);
+    if (utf8 != nullptr && emoji_label_ != nullptr) {
+        DisplayLockGuard lock(this);
+        if (gif_controller_) {
+            gif_controller_->Stop();
+            gif_controller_.reset();
+        }
+        lv_label_set_text(emoji_label_, utf8);
+        lv_obj_add_flag(emoji_image_, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_remove_flag(emoji_label_, LV_OBJ_FLAG_HIDDEN);
+        return;
+    }
+
     auto emoji_collection = static_cast<LvglTheme*>(current_theme_)->emoji_collection();
     auto image = emoji_collection != nullptr ? emoji_collection->GetEmojiImage(emotion) : nullptr;
     if (image == nullptr) {
-        const char* utf8 = font_awesome_get_utf8(emotion);
-        if (utf8 != nullptr && emoji_label_ != nullptr) {
-            DisplayLockGuard lock(this);
-            if (gif_controller_) {
-                gif_controller_->Stop();
-                gif_controller_.reset();
-            }
-            lv_label_set_text(emoji_label_, utf8);
-            lv_obj_add_flag(emoji_image_, LV_OBJ_FLAG_HIDDEN);
-            lv_obj_remove_flag(emoji_label_, LV_OBJ_FLAG_HIDDEN);
-        }
         return;
     }
 
