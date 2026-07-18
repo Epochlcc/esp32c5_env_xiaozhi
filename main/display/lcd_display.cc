@@ -1314,108 +1314,76 @@ void LcdDisplay::CreateEnvironmentPanel() {
 
     auto lvgl_theme = static_cast<LvglTheme*>(current_theme_);
     auto text_font = lvgl_theme->text_font()->font();
-    auto icon_font = lvgl_theme->icon_font()->font();
-    auto large_icon_font = lvgl_theme->large_icon_font()->font();
-
-    // Helper: add a data row with label + value
-    auto AddRow = [&](lv_obj_t* parent, lv_obj_t** value_out, const char* label_text, const char* initial) {
-        auto row = lv_obj_create(parent);
-        lv_obj_set_size(row, LV_PCT(100), LV_SIZE_CONTENT);
-        lv_obj_set_style_border_width(row, 0, 0);
-        lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, 0);
-        lv_obj_set_flex_flow(row, LV_FLEX_FLOW_ROW);
-        lv_obj_set_flex_align(row, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-        lv_obj_set_style_pad_top(row, lvgl_theme->spacing(1), 0);
-        lv_obj_set_style_pad_bottom(row, lvgl_theme->spacing(1), 0);
-
-        auto name_lbl = lv_label_create(row);
-        lv_label_set_text(name_lbl, label_text);
-        lv_obj_set_style_text_font(name_lbl, text_font, 0);
-        lv_obj_set_style_text_color(name_lbl, lvgl_theme->text_color(), 0);
-        lv_obj_set_style_text_opa(name_lbl, LV_OPA_70, 0);
-
-        *value_out = lv_label_create(row);
-        lv_label_set_text(*value_out, initial);
-        lv_obj_set_style_text_font(*value_out, text_font, 0);
-        lv_obj_set_style_text_color(*value_out, lvgl_theme->text_color(), 0);
-    };
 
     lv_obj_t* parent = (content_ != nullptr) ? lv_obj_get_parent(content_) : lv_screen_active();
     env_panel_ = lv_obj_create(parent);
-    lv_obj_set_style_radius(env_panel_, 0, 0);
-    lv_obj_set_width(env_panel_, LV_HOR_RES);
-    lv_obj_set_height(env_panel_, LV_VER_RES);
-    lv_obj_set_style_pad_all(env_panel_, lvgl_theme->spacing(4), 0);
-    lv_obj_set_style_pad_top(env_panel_, lvgl_theme->spacing(10), 0);
-    lv_obj_set_style_border_width(env_panel_, 0, 0);
+    lv_obj_remove_style_all(env_panel_);
+    lv_obj_set_size(env_panel_, LV_HOR_RES, LV_VER_RES);
     lv_obj_set_style_bg_color(env_panel_, lvgl_theme->background_color(), 0);
+    lv_obj_set_style_bg_opa(env_panel_, LV_OPA_COVER, 0);
+    lv_obj_set_style_border_width(env_panel_, 0, 0);
     lv_obj_set_scrollbar_mode(env_panel_, LV_SCROLLBAR_MODE_OFF);
-    lv_obj_set_flex_flow(env_panel_, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_flex_align(env_panel_, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_row(env_panel_, lvgl_theme->spacing(1), 0);
+    lv_obj_remove_flag(env_panel_, LV_OBJ_FLAG_SCROLLABLE);
 
-    // ---- Title row with sensor icon ----
-    auto title_row = lv_obj_create(env_panel_);
-    lv_obj_set_size(title_row, LV_PCT(100), LV_SIZE_CONTENT);
-    lv_obj_set_style_border_width(title_row, 0, 0);
-    lv_obj_set_style_bg_opa(title_row, LV_OPA_TRANSP, 0);
-    lv_obj_set_flex_flow(title_row, LV_FLEX_FLOW_ROW);
-    lv_obj_set_flex_align(title_row, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    lv_obj_set_style_pad_bottom(title_row, lvgl_theme->spacing(3), 0);
+    auto MakeCard = [&](lv_obj_t** card, int x_pct, int y_pct,
+                        lv_obj_t** val_out, const char* title, const char* placeholder) {
+        *card = lv_obj_create(env_panel_);
+        lv_obj_remove_style_all(*card);
+        lv_obj_set_size(*card, lv_pct(44), lv_pct(38));
+        lv_obj_set_align(*card, LV_ALIGN_CENTER);
+        lv_obj_set_x(*card, lv_pct(x_pct));
+        lv_obj_set_y(*card, lv_pct(y_pct));
+        lv_obj_set_style_radius(*card, 10, 0);
+        lv_obj_set_style_bg_color(*card, lv_color_hex(0xFFFFFF), 0);
+        lv_obj_set_style_bg_opa(*card, LV_OPA_20, 0);
+        lv_obj_set_style_border_width(*card, 0, 0);
+        lv_obj_remove_flag(*card, LV_OBJ_FLAG_CLICKABLE);
+        lv_obj_remove_flag(*card, LV_OBJ_FLAG_SCROLLABLE);
 
-    auto title_icon = lv_label_create(title_row);
-    lv_label_set_text(title_icon, FONT_AWESOME_MICROCHIP_AI);
-    lv_obj_set_style_text_font(title_icon, large_icon_font, 0);
-    lv_obj_set_style_text_color(title_icon, lv_color_hex(0x00AAFF), 0);
-    lv_obj_set_style_margin_right(title_icon, lvgl_theme->spacing(2), 0);
+        auto title_lbl = lv_label_create(*card);
+        lv_label_set_text(title_lbl, title);
+        lv_obj_set_style_text_font(title_lbl, text_font, 0);
+        lv_obj_set_style_text_color(title_lbl, lvgl_theme->text_color(), 0);
+        lv_obj_set_style_text_opa(title_lbl, LV_OPA_50, 0);
+        lv_obj_set_pos(title_lbl, 8, 6);
 
-    auto title = lv_label_create(title_row);
-    lv_label_set_text(title, "Environment");
-    lv_obj_set_style_text_font(title, text_font, 0);
-    lv_obj_set_style_text_color(title, lvgl_theme->text_color(), 0);
+        *val_out = lv_label_create(*card);
+        lv_label_set_text(*val_out, placeholder);
+        lv_obj_set_style_text_font(*val_out, text_font, 0);
+        lv_obj_set_style_text_color(*val_out, lvgl_theme->text_color(), 0);
+        lv_obj_center(*val_out);
+        lv_obj_set_pos(*val_out, 0, -2);
+    };
 
-    // ---- Separator ----
-    auto sep = lv_obj_create(env_panel_);
-    lv_obj_set_width(sep, LV_PCT(90));
-    lv_obj_set_height(sep, 1);
-    lv_obj_set_style_border_width(sep, 0, 0);
-    lv_obj_set_style_bg_color(sep, lvgl_theme->text_color(), 0);
-    lv_obj_set_style_bg_opa(sep, LV_OPA_20, 0);
-    lv_obj_set_style_pad_all(sep, 0, 0);
-    lv_obj_set_style_radius(sep, 0, 0);
+    lv_obj_t* temp_card;
+    lv_obj_t* humid_card;
+    lv_obj_t* press_card;
+    lv_obj_t* air_card;
+    MakeCard(&temp_card, -25, -26, &env_temp_label_, "Temperature", "--.- C");
+    MakeCard(&humid_card, 25, -26, &env_humidity_label_, "Humidity", "--.- %");
+    MakeCard(&press_card, -25, 26, &env_pressure_label_, "Pressure", "--- hPa");
+    MakeCard(&air_card, 25, 26, &env_iaq_label_, "Air Quality", "---");
 
-    // ---- Data section ----
-    AddRow(env_panel_, &env_temp_label_,  "Temperature", "--.- C");
-    AddRow(env_panel_, &env_humidity_label_, "Humidity",    "--.- %");
-    AddRow(env_panel_, &env_iaq_label_,      "Air Quality", "---");
-
-    // IAQ level label (colored, standalone)
-    env_iaq_level_label_ = lv_label_create(env_panel_);
-    lv_label_set_text(env_iaq_level_label_, "Calibrating...");
+    env_iaq_level_label_ = lv_label_create(humid_card);
+    lv_label_set_text(env_iaq_level_label_, "");
     lv_obj_set_style_text_font(env_iaq_level_label_, text_font, 0);
-    lv_obj_set_style_text_color(env_iaq_level_label_, lv_color_hex(0x888888), 0);
-    lv_obj_set_style_pad_left(env_iaq_level_label_, lvgl_theme->spacing(12), 0);
+    lv_obj_set_style_text_opa(env_iaq_level_label_, LV_OPA_70, 0);
+    lv_obj_align(env_iaq_level_label_, LV_ALIGN_BOTTOM_MID, 0, -4);
 
-    AddRow(env_panel_, &env_co2_label_,      "CO2 Eq",     "--- ppm");
-    AddRow(env_panel_, &env_pressure_label_,  "Pressure",   "--- hPa");
-
-    // ---- Spacer ----
-    auto spacer = lv_obj_create(env_panel_);
-    lv_obj_set_size(spacer, LV_PCT(100), LV_SIZE_CONTENT);
-    lv_obj_set_flex_grow(spacer, 1);
-    lv_obj_set_style_border_width(spacer, 0, 0);
-    lv_obj_set_style_bg_opa(spacer, LV_OPA_TRANSP, 0);
-
-    // ---- Hint at bottom ----
-    env_hint_label_ = lv_label_create(env_panel_);
-    lv_label_set_text(env_hint_label_, "Touch or say \"Hi Xiaozhi\"");
+    env_hint_label_ = lv_label_create(press_card);
+    lv_label_set_text(env_hint_label_, "");
     lv_obj_set_style_text_font(env_hint_label_, text_font, 0);
-    lv_obj_set_style_text_color(env_hint_label_, lvgl_theme->text_color(), 0);
-    lv_obj_set_style_text_opa(env_hint_label_, LV_OPA_40, 0);
-    lv_obj_set_style_pad_bottom(env_hint_label_, lvgl_theme->spacing(2), 0);
+    lv_obj_set_style_text_opa(env_hint_label_, LV_OPA_50, 0);
+    lv_obj_align(env_hint_label_, LV_ALIGN_BOTTOM_MID, 0, -4);
+
+    env_co2_label_ = lv_label_create(air_card);
+    lv_label_set_text(env_co2_label_, "");
+    lv_obj_set_style_text_font(env_co2_label_, text_font, 0);
+    lv_obj_set_style_text_opa(env_co2_label_, LV_OPA_50, 0);
+    lv_obj_align(env_co2_label_, LV_ALIGN_BOTTOM_MID, 0, -4);
 
     lv_obj_add_flag(env_panel_, LV_OBJ_FLAG_HIDDEN);
-    ESP_LOGI(TAG, "Environment panel created (enhanced)");
+    ESP_LOGI(TAG, "Environment panel created (2x2 cards)");
 }
 
 void LcdDisplay::DestroyEnvironmentPanel() {
@@ -1467,80 +1435,77 @@ void LcdDisplay::UpdateEnvironmentData(float temperature, float humidity, float 
     }
 
     char buf[48];
-    auto lvgl_theme = static_cast<LvglTheme*>(current_theme_);
 
-    // Temperature
-    snprintf(buf, sizeof(buf), "%.1f \xC2\xB0\x43", temperature);
+    snprintf(buf, sizeof(buf), "%.1f\xC2\xB0\x43", temperature);
     lv_label_set_text(env_temp_label_, buf);
 
-    // Humidity with comfort emoji
+    snprintf(buf, sizeof(buf), "%.0f %%", humidity);
+    lv_label_set_text(env_humidity_label_, buf);
+
+    const char* comfort;
     lv_color_t comfort_color;
-    const char* comfort_face;
     if (humidity >= 30 && humidity <= 60) {
-        comfort_face = "\xE2\x80\xBB\xE2\x80\xBB";  // ^_^
+        comfort = "Comfortable";
         comfort_color = lv_color_hex(0x00CC00);
     } else if ((humidity >= 20 && humidity < 30) || (humidity > 60 && humidity <= 70)) {
-        comfort_face = "0_0";
+        comfort = "Mild";
         comfort_color = lv_color_hex(0xCCCC00);
     } else {
-        comfort_face = "T_T";
+        comfort = "Uncomfortable";
         comfort_color = lv_color_hex(0xCC6600);
     }
-    snprintf(buf, sizeof(buf), "%.1f %%  %s", humidity, comfort_face);
-    lv_label_set_text(env_humidity_label_, buf);
-    lv_obj_set_style_text_color(env_humidity_label_, comfort_color, 0);
+    lv_label_set_text(env_iaq_level_label_, comfort);
+    lv_obj_set_style_text_color(env_iaq_level_label_, comfort_color, 0);
 
-    // IAQ
-    snprintf(buf, sizeof(buf), "%.0f / 500", iaq);
-    lv_label_set_text(env_iaq_label_, buf);
-
-    // IAQ Level (colored)
-    lv_color_t level_color = lv_color_hex(0x888888);
-    const char* level;
-    if (iaq_accuracy == 0) {
-        level = "";
-    } else if (iaq <= 50) {
-        level = "Excellent";
-        level_color = lv_color_hex(0x00CC00);
-    } else if (iaq <= 100) {
-        level = "Good";
-        level_color = lv_color_hex(0x88CC00);
-    } else if (iaq <= 150) {
-        level = "Lightly polluted";
-        level_color = lv_color_hex(0xCCCC00);
-    } else if (iaq <= 200) {
-        level = "Moderately polluted";
-        level_color = lv_color_hex(0xCC8800);
-    } else {
-        level = "Heavily polluted";
-        level_color = lv_color_hex(0xCC0000);
-    }
-    lv_label_set_text(env_iaq_level_label_, level);
-    lv_obj_set_style_text_color(env_iaq_level_label_, level_color, 0);
-
-    // CO2 Equivalent
-    if (co2_equivalent > 0) {
-        snprintf(buf, sizeof(buf), "%.0f ppm", co2_equivalent);
-    } else {
-        snprintf(buf, sizeof(buf), "-- ppm");
-    }
-    lv_label_set_text(env_co2_label_, buf);
-
-    // Pressure with weather hint
     float pressure_hpa = pressure / 100.0f;
+    snprintf(buf, sizeof(buf), "%.1f", pressure_hpa);
+    lv_label_set_text(env_pressure_label_, buf);
+
     const char* weather;
     lv_color_t weather_color;
     if (pressure_hpa > 1018.25f) {
-        weather = "Sunny";
+        weather = "\xE2\x98\x80\xEF\xB8\x8F Sunny";
         weather_color = lv_color_hex(0x00CC00);
     } else if (pressure_hpa < 1008.25f) {
-        weather = "Rainy";
-        weather_color = lv_color_hex(0xCC0000);
+        weather = "\xF0\x9F\x8C\xA7 Rainy";
+        weather_color = lv_color_hex(0x66AAFF);
     } else {
-        weather = "Normal";
+        weather = "\xE2\x9B\x85 Normal";
         weather_color = lv_color_hex(0x888888);
     }
-    snprintf(buf, sizeof(buf), "%.1f hPa (%s)", pressure_hpa, weather);
-    lv_label_set_text(env_pressure_label_, buf);
-    lv_obj_set_style_text_color(env_pressure_label_, weather_color, 0);
+    lv_label_set_text(env_hint_label_, weather);
+    lv_obj_set_style_text_color(env_hint_label_, weather_color, 0);
+
+    if (iaq_accuracy == 0) {
+        lv_label_set_text(env_iaq_label_, "Calibrating...");
+        lv_obj_set_style_text_color(env_iaq_label_, lv_color_hex(0x888888), 0);
+    } else {
+        const char* level;
+        lv_color_t level_color;
+        if (iaq <= 50) {
+            level = "Excellent";
+            level_color = lv_color_hex(0x00CC00);
+        } else if (iaq <= 100) {
+            level = "Good";
+            level_color = lv_color_hex(0x88CC00);
+        } else if (iaq <= 150) {
+            level = "Light polluted";
+            level_color = lv_color_hex(0xCCCC00);
+        } else if (iaq <= 200) {
+            level = "Moderate polluted";
+            level_color = lv_color_hex(0xCC8800);
+        } else {
+            level = "Heavy polluted";
+            level_color = lv_color_hex(0xCC0000);
+        }
+        lv_label_set_text(env_iaq_label_, level);
+        lv_obj_set_style_text_color(env_iaq_label_, level_color, 0);
+    }
+
+    if (co2_equivalent > 0) {
+        snprintf(buf, sizeof(buf), "CO\xE2\x82\x82: %.0f ppm", co2_equivalent);
+    } else {
+        snprintf(buf, sizeof(buf), "CO\xE2\x82\x82: -- ppm");
+    }
+    lv_label_set_text(env_co2_label_, buf);
 }
