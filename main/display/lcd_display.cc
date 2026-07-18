@@ -1362,12 +1362,18 @@ void LcdDisplay::CreateEnvironmentPanel() {
 
     lv_obj_t* temp_card;
     lv_obj_t* humid_card;
-    lv_obj_t* press_card;
     lv_obj_t* air_card;
-    MakeCard(&temp_card, -25, -26, &env_temp_label_, "Temperature", "--.- C");
-    MakeCard(&humid_card, 25, -26, &env_humidity_label_, "Humidity", "--.- %");
-    MakeCard(&press_card, -25, 26, &env_pressure_label_, "Pressure", "--- hPa");
-    MakeCard(&air_card, 25, 26, &env_iaq_label_, "Air Quality", "---");
+    lv_obj_t* security_card;
+    MakeCard(&temp_card, -25, -26, &env_temp_label_, "温度", "--.- C");
+    MakeCard(&humid_card, 25, -26, &env_humidity_label_, "湿度", "--.- %");
+    MakeCard(&air_card, -25, 26, &env_iaq_label_, "空气质量", "---");
+    MakeCard(&security_card, 25, 26, &env_security_state_label_, "安防", "未连接");
+
+    env_pressure_label_ = lv_label_create(temp_card);
+    lv_label_set_text(env_pressure_label_, "");
+    lv_obj_set_style_text_font(env_pressure_label_, text_font, 0);
+    lv_obj_set_style_text_opa(env_pressure_label_, LV_OPA_60, 0);
+    lv_obj_align(env_pressure_label_, LV_ALIGN_BOTTOM_MID, 0, -4);
 
     env_iaq_level_label_ = lv_label_create(humid_card);
     lv_label_set_text(env_iaq_level_label_, "");
@@ -1375,17 +1381,20 @@ void LcdDisplay::CreateEnvironmentPanel() {
     lv_obj_set_style_text_opa(env_iaq_level_label_, LV_OPA_70, 0);
     lv_obj_align(env_iaq_level_label_, LV_ALIGN_BOTTOM_MID, 0, -4);
 
-    env_hint_label_ = lv_label_create(press_card);
-    lv_label_set_text(env_hint_label_, "");
-    lv_obj_set_style_text_font(env_hint_label_, text_font, 0);
-    lv_obj_set_style_text_opa(env_hint_label_, LV_OPA_50, 0);
-    lv_obj_align(env_hint_label_, LV_ALIGN_BOTTOM_MID, 0, -4);
-
     env_co2_label_ = lv_label_create(air_card);
     lv_label_set_text(env_co2_label_, "");
     lv_obj_set_style_text_font(env_co2_label_, text_font, 0);
     lv_obj_set_style_text_opa(env_co2_label_, LV_OPA_50, 0);
     lv_obj_align(env_co2_label_, LV_ALIGN_BOTTOM_MID, 0, -4);
+
+    env_security_summary_label_ = lv_label_create(security_card);
+    lv_label_set_text(env_security_summary_label_, "请先配置 S3 地址");
+    lv_label_set_long_mode(env_security_summary_label_, LV_LABEL_LONG_WRAP);
+    lv_obj_set_width(env_security_summary_label_, lv_pct(100));
+    lv_obj_set_style_text_font(env_security_summary_label_, text_font, 0);
+    lv_obj_set_style_text_color(env_security_summary_label_, lvgl_theme->text_color(), 0);
+    lv_obj_set_style_text_opa(env_security_summary_label_, LV_OPA_60, 0);
+    lv_obj_align(env_security_summary_label_, LV_ALIGN_BOTTOM_MID, 0, -4);
 
     lv_obj_add_flag(env_panel_, LV_OBJ_FLAG_HIDDEN);
     ESP_LOGI(TAG, "Environment panel created (2x2 cards)");
@@ -1402,6 +1411,8 @@ void LcdDisplay::DestroyEnvironmentPanel() {
         env_pressure_label_ = nullptr;
         env_iaq_level_label_ = nullptr;
         env_hint_label_ = nullptr;
+        env_security_state_label_ = nullptr;
+        env_security_summary_label_ = nullptr;
     }
 }
 
@@ -1450,57 +1461,43 @@ void LcdDisplay::UpdateEnvironmentData(float temperature, float humidity, float 
     const char* comfort;
     lv_color_t comfort_color;
     if (humidity >= 30 && humidity <= 60) {
-        comfort = "Comfortable";
+        comfort = "舒适";
         comfort_color = lv_color_hex(0x00CC00);
     } else if ((humidity >= 20 && humidity < 30) || (humidity > 60 && humidity <= 70)) {
-        comfort = "Mild";
+        comfort = "一般";
         comfort_color = lv_color_hex(0xCCCC00);
     } else {
-        comfort = "Uncomfortable";
+        comfort = "不舒适";
         comfort_color = lv_color_hex(0xCC6600);
     }
     lv_label_set_text(env_iaq_level_label_, comfort);
     lv_obj_set_style_text_color(env_iaq_level_label_, comfort_color, 0);
 
     float pressure_hpa = pressure / 100.0f;
-    snprintf(buf, sizeof(buf), "%.1f", pressure_hpa);
+    snprintf(buf, sizeof(buf), "气压 %.1f hPa", pressure_hpa);
     lv_label_set_text(env_pressure_label_, buf);
-
-    const char* weather;
-    lv_color_t weather_color;
-    if (pressure_hpa > 1018.25f) {
-        weather = "\xE2\x98\x80\xEF\xB8\x8F Sunny";
-        weather_color = lv_color_hex(0x00CC00);
-    } else if (pressure_hpa < 1008.25f) {
-        weather = "\xF0\x9F\x8C\xA7 Rainy";
-        weather_color = lv_color_hex(0x66AAFF);
-    } else {
-        weather = "\xE2\x9B\x85 Normal";
-        weather_color = lv_color_hex(0x888888);
-    }
-    lv_label_set_text(env_hint_label_, weather);
-    lv_obj_set_style_text_color(env_hint_label_, weather_color, 0);
+    lv_obj_set_style_text_color(env_pressure_label_, lv_color_hex(0x888888), 0);
 
     if (iaq_accuracy == 0) {
-        lv_label_set_text(env_iaq_label_, "Calibrating...");
+        lv_label_set_text(env_iaq_label_, "校准中");
         lv_obj_set_style_text_color(env_iaq_label_, lv_color_hex(0x888888), 0);
     } else {
         const char* level;
         lv_color_t level_color;
         if (iaq <= 50) {
-            level = "Excellent";
+            level = "优秀";
             level_color = lv_color_hex(0x00CC00);
         } else if (iaq <= 100) {
-            level = "Good";
+            level = "良好";
             level_color = lv_color_hex(0x88CC00);
         } else if (iaq <= 150) {
-            level = "Light polluted";
+            level = "轻度污染";
             level_color = lv_color_hex(0xCCCC00);
         } else if (iaq <= 200) {
-            level = "Moderate polluted";
+            level = "中度污染";
             level_color = lv_color_hex(0xCC8800);
         } else {
-            level = "Heavy polluted";
+            level = "重度污染";
             level_color = lv_color_hex(0xCC0000);
         }
         lv_label_set_text(env_iaq_label_, level);
@@ -1508,9 +1505,29 @@ void LcdDisplay::UpdateEnvironmentData(float temperature, float humidity, float 
     }
 
     if (co2_equivalent > 0) {
-        snprintf(buf, sizeof(buf), "CO\xE2\x82\x82: %.0f ppm", co2_equivalent);
+        snprintf(buf, sizeof(buf), "CO\xE2\x82\x82 %.0f ppm", co2_equivalent);
     } else {
-        snprintf(buf, sizeof(buf), "CO\xE2\x82\x82: -- ppm");
+        snprintf(buf, sizeof(buf), "CO\xE2\x82\x82 -- ppm");
     }
     lv_label_set_text(env_co2_label_, buf);
+}
+
+void LcdDisplay::UpdateSecurityStatus(const char* state, const char* summary) {
+    if (env_security_state_label_ == nullptr || env_security_summary_label_ == nullptr) {
+        return;
+    }
+
+    auto lvgl_theme = static_cast<LvglTheme*>(current_theme_);
+    lv_color_t state_color = lvgl_theme->text_color();
+    if (strcmp(state, "报警") == 0) {
+        state_color = lv_color_hex(0xCC0000);
+    } else if (strcmp(state, "未报警") == 0) {
+        state_color = lv_color_hex(0x00CC66);
+    } else if (strcmp(state, "未连接") == 0) {
+        state_color = lv_color_hex(0x888888);
+    }
+
+    lv_label_set_text(env_security_state_label_, state);
+    lv_obj_set_style_text_color(env_security_state_label_, state_color, 0);
+    lv_label_set_text(env_security_summary_label_, summary != nullptr ? summary : "未配置");
 }

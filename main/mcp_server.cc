@@ -52,6 +52,13 @@ void McpServer::AddCommonTools() {
             return board.GetDeviceStatusJson();
         });
 
+    AddTool("self.security_node.get_status",
+        "Get the latest synchronized status from the external security node, including alarm state and recent event summary.",
+        PropertyList(),
+        [](const PropertyList& properties) -> ReturnValue {
+            return Application::GetInstance().GetSecurityNodeStatusJson();
+        });
+
     AddTool("self.audio_speaker.set_volume", 
         "Set the volume of the audio speaker. If the current volume is unknown, you must call `self.get_device_status` tool first and then call this tool.",
         PropertyList({

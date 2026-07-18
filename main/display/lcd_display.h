@@ -44,6 +44,8 @@ protected:
     lv_obj_t* env_pressure_label_ = nullptr;
     lv_obj_t* env_iaq_level_label_ = nullptr;
     lv_obj_t* env_hint_label_ = nullptr;
+    lv_obj_t* env_security_state_label_ = nullptr;
+    lv_obj_t* env_security_summary_label_ = nullptr;
 
     void CreateEnvironmentPanel();
     void DestroyEnvironmentPanel();
@@ -68,6 +70,7 @@ public:
     void SetEnvironmentMode(bool enabled);
     void UpdateEnvironmentData(float temperature, float humidity, float iaq,
                                uint8_t iaq_accuracy, float co2_equivalent, float pressure);
+    void UpdateSecurityStatus(const char* state, const char* summary) override;
 };
 
 // SPI LCD display

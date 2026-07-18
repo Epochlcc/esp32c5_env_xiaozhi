@@ -17,6 +17,7 @@
 #include "audio_service.h"
 #include "device_state.h"
 #include "device_state_machine.h"
+#include "services/security_node_client.h"
 
 // Main event bits
 #define MAIN_EVENT_SCHEDULE             (1 << 0)
@@ -119,6 +120,7 @@ public:
     AecMode GetAecMode() const { return aec_mode_; }
     void PlaySound(const std::string_view& sound);
     AudioService& GetAudioService() { return audio_service_; }
+    std::string GetSecurityNodeStatusJson() const;
     
     /**
      * Reset protocol resources (thread-safe)
@@ -154,6 +156,8 @@ private:
 
     DisplayMode display_mode_ = DisplayMode::Chat;
     int cloud_upload_ticks_ = 0;
+    bool network_connected_ = false;
+    SecurityNodeClient security_node_client_;
 
 
     // Event handlers
@@ -182,6 +186,8 @@ private:
     void OnStateChanged(DeviceState old_state, DeviceState new_state);
 
     void UpdateEnvironmentDisplay();
+    void PollSecurityNode();
+    void UpdateSecurityDisplay();
     void SwitchToEnvironmentMode();
     void SwitchToChatMode();
     void UploadEnvironmentData();

@@ -10,6 +10,8 @@
 #include "assets.h"
 #include "settings.h"
 
+#include <cstdio>
+
 #include <cstring>
 #include <esp_log.h>
 #include <cJSON.h>
@@ -101,6 +103,8 @@ void Application::Initialize() {
     auto& mcp_server = McpServer::GetInstance();
     mcp_server.AddCommonTools();
     mcp_server.AddUserOnlyTools();
+
+    security_node_client_.Initialize();
 
     // Set network event callback for UI updates and network state handling
     board.SetNetworkEventCallback([this](NetworkEvent event, const std::string& data) {
@@ -259,8 +263,12 @@ void Application::Run() {
             }
 
 #ifdef CONFIG_BOARD_TYPE_ESP_SENSAIRSHUTTLE
+            if (network_connected_ && clock_ticks_ % 5 == 0) {
+                PollSecurityNode();
+            }
             if (display_mode_ == DisplayMode::Environment) {
                 UpdateEnvironmentDisplay();
+                UpdateSecurityDisplay();
             }
             if (clock_ticks_ % 60 == 0) {
                 UploadEnvironmentData();
@@ -272,6 +280,7 @@ void Application::Run() {
 
 void Application::HandleNetworkConnectedEvent() {
     ESP_LOGI(TAG, "Network connected");
+    network_connected_ = true;
     auto state = GetDeviceState();
 
     if (state == kDeviceStateStarting || state == kDeviceStateWifiConfiguring) {
@@ -296,6 +305,7 @@ void Application::HandleNetworkConnectedEvent() {
 }
 
 void Application::HandleNetworkDisconnectedEvent() {
+    network_connected_ = false;
     // Close current conversation when network disconnected
     auto state = GetDeviceState();
     if (state == kDeviceStateConnecting || state == kDeviceStateListening || state == kDeviceStateSpeaking) {
@@ -1161,6 +1171,30 @@ void Application::UpdateEnvironmentDisplay() {
                                    data.iaq_accuracy, data.co2_equivalent, data.pressure);
 }
 
+void Application::PollSecurityNode() {
+    security_node_client_.Poll();
+}
+
+void Application::UpdateSecurityDisplay() {
+    auto snapshot = security_node_client_.GetLatestSnapshot();
+    auto display = Board::GetInstance().GetDisplay();
+
+    if (!snapshot.configured) {
+        display->UpdateSecurityStatus("未连接", "未配置");
+        return;
+    }
+    if (!snapshot.reachable || !snapshot.valid) {
+        display->UpdateSecurityStatus("未连接", "连接失败");
+        return;
+    }
+
+    if (snapshot.state == "TRIGGERED" || snapshot.state == "PENDING") {
+        display->UpdateSecurityStatus("报警", "已连接");
+    } else {
+        display->UpdateSecurityStatus("未报警", "已连接");
+    }
+}
+
 void Application::SwitchToEnvironmentMode() {
     if (display_mode_ == DisplayMode::Environment) {
         return;
@@ -1171,6 +1205,7 @@ void Application::SwitchToEnvironmentMode() {
     display_mode_ = DisplayMode::Environment;
 
     UpdateEnvironmentDisplay();
+    UpdateSecurityDisplay();
     ESP_LOGI(TAG, "Switched to Environment mode");
 }
 
@@ -1204,6 +1239,10 @@ void Application::UploadEnvironmentData() {
     }
 
     cloud_upload_ticks_++;
+}
+
+std::string Application::GetSecurityNodeStatusJson() const {
+    return security_node_client_.GetSnapshotJson();
 }
 #endif
 

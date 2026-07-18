@@ -46,7 +46,8 @@ public:
     virtual void SetEnvironmentMode(bool enabled) {}
     virtual void UpdateEnvironmentData(float temperature, float humidity, float iaq,
                                        uint8_t iaq_accuracy, float co2_equivalent,
-                                       float pressure) {}
+                                        float pressure) {}
+    virtual void UpdateSecurityStatus(const char* state, const char* summary) {}
 
     inline int width() const { return width_; }
     inline int height() const { return height_; }

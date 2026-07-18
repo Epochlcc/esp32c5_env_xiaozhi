@@ -38,6 +38,7 @@ set(SOURCES "audio/audio_codec.cc"
             "assets.cc"
             "main.cc"
             "services/bme690_service.cc"
+            "services/security_node_client.cc"
             )
 
 set(INCLUDE_DIRS "." "display" "display/lvgl_display" "display/lvgl_display/jpg" "audio" "audio/demuxer" "protocols" "services")
