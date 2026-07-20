@@ -107,7 +107,7 @@ The device connects to the broker using:
     "frame_duration": 60
   },
   "udp": {
-    "server": "192.168.1.100",
+    "server": "192.168.106.1",
     "port": 8888,
     "key": "0123456789ABCDEF0123456789ABCDEF",
     "nonce": "0123456789ABCDEF0123456789ABCDEF"

@@ -9,7 +9,7 @@
 
 namespace {
 constexpr char TAG[] = "SecurityNode";
-constexpr char kSecurityNodeBaseUrl[] = "http://192.168.1.100";
+constexpr char kSecurityNodeBaseUrl[] = "http://192.168.106.1";
 }
 
 void SecurityNodeClient::Initialize() {

@@ -1188,7 +1188,8 @@ void Application::UpdateSecurityDisplay() {
         return;
     }
 
-    if (snapshot.state == "TRIGGERED" || snapshot.state == "PENDING") {
+    if (snapshot.state == "triggered" || snapshot.state == "pending" ||
+        snapshot.state == "TRIGGERED" || snapshot.state == "PENDING") {
         display->UpdateSecurityStatus("报警", "已连接");
     } else {
         display->UpdateSecurityStatus("未报警", "已连接");
